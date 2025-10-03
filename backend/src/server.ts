@@ -5,6 +5,7 @@ const { connectDB, getPool, isConnected } = require('./database');
 const { createTables, seedInitialData } = require('./models');
 const authRoutes = require('./routes/auth').default;
 const feedbackRoutes = require('./routes/feedback').default;
+const mealsRoutes = require('./routes/meals').default;
 
 // Load environment variables
 dotenv.config();
@@ -40,6 +41,7 @@ connectDB().then(async () => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/meals', mealsRoutes);
 
 // Basic route
 app.get('/', (req: any, res: any) => {
@@ -48,7 +50,8 @@ app.get('/', (req: any, res: any) => {
     version: '1.0.0',
     endpoints: {
       auth: '/api/auth',
-      feedback: '/api/feedback'
+      feedback: '/api/feedback',
+      meals: '/api/meals'
     }
   });
 });

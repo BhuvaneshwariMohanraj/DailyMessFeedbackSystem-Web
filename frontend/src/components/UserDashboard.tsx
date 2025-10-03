@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../App';
 import FeedbackForm from './FeedbackForm';
+import MealMenu from './MealMenu';
 
 interface UserDashboardProps {
   user: User;
@@ -17,42 +18,17 @@ interface Feedback {
   dish_names?: string;
 }
 
-interface Menu {
-  date: string;
-  day?: string;
-  meals: {
-    [key: string]: Array<{
-      dish_name: string;
-      description?: string;
-    }>;
-  };
-}
 
 const UserDashboard = ({ user }: UserDashboardProps) => {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
-  const [menu, setMenu] = useState<Menu | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('today');
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
 
   useEffect(() => {
     fetchFeedbackHistory();
-    fetchTodayMenu();
   }, []);
 
-  const fetchTodayMenu = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/feedback/menu/today');
-      if (response.ok) {
-        const data = await response.json();
-        setMenu(data);
-      }
-    } catch (error) {
-      console.error('Error fetching menu:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchFeedbackHistory = async () => {
     try {
@@ -69,35 +45,12 @@ const UserDashboard = ({ user }: UserDashboardProps) => {
       }
     } catch (error) {
       console.error('Error fetching feedback history:', error);
-    }
-  };
-
-  const [selectedDay, setSelectedDay] = useState<string>('today');
-  const [dayMenu, setDayMenu] = useState<Menu | null>(null);
-  const [dayMenuLoading, setDayMenuLoading] = useState(false);
-
-  const fetchDayMenu = async (day: string) => {
-    setDayMenuLoading(true);
-    try {
-      const response = await fetch(`http://localhost:5000/api/feedback/menu/${day}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDayMenu(data);
-      } else {
-        setDayMenu(null);
-      }
-    } catch (error) {
-      console.error('Error fetching day menu:', error);
-      setDayMenu(null);
     } finally {
-      setDayMenuLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleDayChange = (day: string) => {
-    setSelectedDay(day);
-    fetchDayMenu(day);
-  };
+
 
   const handleFeedbackSubmitted = () => {
     setShowFeedbackForm(false);
@@ -171,67 +124,7 @@ const UserDashboard = ({ user }: UserDashboardProps) => {
           {/* Tab Content */}
           <div className="p-6">
             {activeTab === 'today' && (
-              <div className="space-y-6">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">🍽️ Today's Menu</h2>
-                  <p className="text-gray-600">Discover what's cooking today!</p>
-
-                  {/* Day Selector */}
-                  <div className="flex justify-center mt-6 mb-8">
-                    <div className="inline-flex bg-gray-100 rounded-lg p-1">
-                      {['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].map((day) => (
-                        <button
-                          key={day}
-                          onClick={() => handleDayChange(day)}
-                          className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                            selectedDay === day
-                              ? 'bg-white text-blue-600 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                          }`}
-                        >
-                          {day.charAt(0).toUpperCase() + day.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {dayMenuLoading ? (
-                  <div className="flex justify-center items-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  </div>
-                ) : dayMenu && dayMenu.meals && Object.keys(dayMenu.meals).length > 0 ? (
-                  <div className="grid md:grid-cols-3 gap-6">
-                    {Object.entries(dayMenu.meals).map(([mealType, dishes]) => (
-                      <div key={mealType} className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-                        <div className="text-center mb-4">
-                          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 ${mealType === 'breakfast' ? 'bg-orange-100 text-orange-600' : mealType === 'lunch' ? 'bg-green-100 text-green-600' : 'bg-purple-100 text-purple-600'}`}>
-                            <span className="text-xl">{mealType === 'breakfast' ? '🌅' : mealType === 'lunch' ? '☀️' : '🌙'}</span>
-                          </div>
-                          <h3 className="text-xl font-bold text-gray-900 capitalize">{mealType}</h3>
-                          <p className="text-sm text-gray-500">{dayMenu.day} - {dayMenu.date}</p>
-                        </div>
-                        <div className="space-y-3">
-                          {dishes.map((dish, index) => (
-                            <div key={index} className="bg-white rounded-lg p-3 border border-gray-100">
-                              <h4 className="font-semibold text-gray-800">{dish.dish_name}</h4>
-                              {dish.description && (
-                                <p className="text-sm text-gray-600 mt-1">{dish.description}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="text-6xl mb-4">🍽️</div>
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">Menu Not Available</h3>
-                    <p className="text-gray-500">Menu for {selectedDay} hasn't been updated yet. Check back later!</p>
-                  </div>
-                )}
-              </div>
+              <MealMenu />
             )}
 
             {activeTab === 'feedback' && (
