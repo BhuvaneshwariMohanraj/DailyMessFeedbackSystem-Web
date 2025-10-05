@@ -1,5 +1,4 @@
 # Azure DevOps CI/CD Pipeline for Daily Mess Feedback System
-# This pipeline builds both frontend and backend, then deploys to Azure
 
 trigger:
   branches:
@@ -12,15 +11,10 @@ trigger:
     - docs/*
 
 variables:
-  # Build configuration
   buildConfiguration: 'Release'
-  nodeVersion: '18.x'
-  
-  # Azure service connection names (to be configured in Azure DevOps)
+  nodeVersion: '20.x'
   azureSubscription: 'Azure-ServiceConnection'
-  
-  # Azure resources
-  resourceGroupName: 'rg-mess-feedback-system'
+  resourceGroupName: 'mess_fb'
   backendAppName: 'app-mess-feedback-backend'
   frontendAppName: 'app-mess-feedback-frontend'
   sqlServerName: 'dailyfeedbacksystem'
@@ -33,7 +27,7 @@ stages:
   - job: BuildAll
     displayName: 'Build Frontend and Backend'
     pool:
-      vmImage: 'ubuntu-latest'
+       name: 'Default'
     
     steps:
     - task: NodeTool@0
@@ -41,25 +35,26 @@ stages:
         versionSpec: '$(nodeVersion)'
       displayName: 'Install Node.js'
     
-    # Build Frontend First
     - script: |
         echo "Building Frontend..."
         cd frontend
-        npm ci
-        npm run build
+        call npm ci
+        if errorlevel 1 exit /b 1
+        call npm run build
+        if errorlevel 1 exit /b 1
         echo "Frontend build completed!"
       displayName: 'Build Frontend'
     
-    # Build Backend Second
     - script: |
         echo "Building Backend..."
         cd backend
-        npm ci
-        npm run build
+        call npm ci
+        if errorlevel 1 exit /b 1
+        call npm run build
+        if errorlevel 1 exit /b 1
         echo "Backend build completed!"
       displayName: 'Build Backend'
     
-    # Archive Frontend
     - task: ArchiveFiles@2
       inputs:
         rootFolderOrFile: 'frontend/dist'
@@ -69,7 +64,6 @@ stages:
         replaceExistingArchive: true
       displayName: 'Archive Frontend Build'
     
-    # Archive Backend
     - task: ArchiveFiles@2
       inputs:
         rootFolderOrFile: 'backend'
@@ -79,12 +73,10 @@ stages:
         replaceExistingArchive: true
       displayName: 'Archive Backend Build'
     
-    # Publish Frontend Artifact
     - publish: '$(Build.ArtifactStagingDirectory)/frontend-$(Build.BuildId).zip'
       artifact: frontend
       displayName: 'Publish Frontend Artifact'
     
-    # Publish Backend Artifact
     - publish: '$(Build.ArtifactStagingDirectory)/backend-$(Build.BuildId).zip'
       artifact: backend
       displayName: 'Publish Backend Artifact'
@@ -98,7 +90,7 @@ stages:
   - deployment: DeployBackend
     displayName: 'Deploy Backend to Azure App Service'
     pool:
-      vmImage: 'ubuntu-latest'
+      name: 'Default'
     environment: 'production'
     
     strategy:
@@ -114,21 +106,15 @@ stages:
               azureSubscription: '$(azureSubscription)'
               appType: 'webAppLinux'
               appName: '$(backendAppName)'
-              runtimeStack: 'NODE|18-lts'
+              runtimeStack: 'NODE|20-lts'
               package: '$(Pipeline.Workspace)/backend/backend-$(Build.BuildId).zip'
-              appSettings: |
-                -DB_SERVER $(sqlServerName).database.windows.net
-                -DB_NAME $(sqlDatabaseName)
-                -DB_USER $(DB_USER)
-                -DB_PASSWORD $(DB_PASSWORD)
-                -JWT_SECRET $(JWT_SECRET)
-                -PORT 8080
+              appSettings: '-DB_SERVER $(sqlServerName).database.windows.net -DB_NAME $(sqlDatabaseName) -DB_USER $(DB_USER) -DB_PASSWORD $(DB_PASSWORD) -JWT_SECRET $(JWT_SECRET) -PORT 8080'
             displayName: 'Deploy backend to Azure App Service'
 
   - deployment: DeployFrontend
-    displayName: 'Deploy Frontend to Azure Static Web Apps'
+    displayName: 'Deploy Frontend'
     pool:
-      vmImage: 'ubuntu-latest'
+      name: 'Default'
     environment: 'production'
     
     strategy:
@@ -139,12 +125,33 @@ stages:
             artifact: frontend
             displayName: 'Download frontend artifact'
           
-          - task: AzureStaticWebApp@0
+          - task: ExtractFiles@1
             inputs:
-              azure_static_web_apps_api_token: '$(AZURE_STATIC_WEB_APPS_API_TOKEN)'
-              app_location: '/'
-              api_location: ''
-              output_location: ''
-              skip_app_build: true
-              app_build_command: ''
-            displayName: 'Deploy frontend to Azure Static Web Apps'
+              archiveFilePatterns: '$(Pipeline.Workspace)/frontend/frontend-$(Build.BuildId).zip'
+              destinationFolder: '$(Pipeline.Workspace)/frontend-extracted'
+              cleanDestinationFolder: true
+            displayName: 'Extract Frontend Files'
+          
+          - task: PowerShell@2
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Installing SWA CLI..."
+                npm install -g @azure/static-web-apps-cli
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Error "Failed to install SWA CLI"
+                    exit 1
+                }
+                
+                Write-Host "Deploying to Static Web App..."
+                Set-Location "$(Pipeline.Workspace)/frontend-extracted"
+                
+                swa deploy . --deployment-token $(AZURE_STATIC_WEB_APPS_API_TOKEN) --no-use-keychain
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Error "Deployment failed"
+                    exit 1
+                }
+                
+                Write-Host "Frontend deployed successfully!"
+              errorActionPreference: 'stop'
+            displayName: 'Deploy Frontend to Static Web App'
