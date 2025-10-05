@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import config from '../config';
 
 interface FeedbackFormProps {
   onSubmit?: () => void;
@@ -51,7 +52,7 @@ const FeedbackForm = ({ onSubmit, onCancel }: FeedbackFormProps) => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/feedback/submit', {
+      const response = await fetch(`${config.apiUrl}/api/feedback/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

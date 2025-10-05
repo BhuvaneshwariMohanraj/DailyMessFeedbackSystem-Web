@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import config from '../config';
 import { User } from '../App';
 
 interface LoginFormProps {
@@ -21,7 +22,11 @@ const LoginForm = ({ onLogin, onShowRegister }: LoginFormProps) => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const apiUrl = `${config.apiUrl}/api/auth/login`;
+      console.log('Attempting to connect to:', apiUrl);
+      console.log('Config API URL:', config.apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

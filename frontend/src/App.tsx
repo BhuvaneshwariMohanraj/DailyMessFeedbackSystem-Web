@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import './App.css';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
-import FeedbackForm from './components/FeedbackForm';
 import UserDashboard from './components/UserDashboard';
 import AdminDashboard from './components/AdminDashboard';
+import config from './config';
 import Navbar from './components/Navbar';
 
 export interface User {
@@ -32,7 +33,7 @@ function App() {
 
   const fetchUserProfile = async (token: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/me', {
+      const response = await fetch(`${config.apiUrl}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
