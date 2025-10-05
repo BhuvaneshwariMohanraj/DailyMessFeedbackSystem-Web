@@ -22,11 +22,7 @@ const LoginForm = ({ onLogin, onShowRegister }: LoginFormProps) => {
     setError('');
 
     try {
-      const apiUrl = `${config.apiUrl}/api/auth/login`;
-      console.log('Attempting to connect to:', apiUrl);
-      console.log('Config API URL:', config.apiUrl);
-      
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`${config.apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
