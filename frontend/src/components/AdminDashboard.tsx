@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../App';
+import config from '../config';
 
 interface AdminDashboardProps {
   user: User;
@@ -56,7 +57,7 @@ const AdminDashboard = ({ user }: AdminDashboardProps) => {
     try {
       const token = localStorage.getItem('accessToken');
       const queryParams = new URLSearchParams(filters).toString();
-      const response = await fetch(`http://localhost:5000/api/feedback/admin/stats?${queryParams}`, {
+      const response = await fetch(`${config.apiUrl}/api/feedback/admin/stats?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -80,7 +81,7 @@ const AdminDashboard = ({ user }: AdminDashboardProps) => {
         offset: '0'
       }).toString();
 
-      const response = await fetch(`http://localhost:5000/api/feedback/admin/all?${queryParams}`, {
+      const response = await fetch(`${config.apiUrl}/api/feedback/admin/all?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -112,7 +113,7 @@ const AdminDashboard = ({ user }: AdminDashboardProps) => {
   const updateFeedbackStatus = async (feedbackId: number, newStatus: string) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`http://localhost:5000/api/feedback/${feedbackId}/status`, {
+      const response = await fetch(`${config.apiUrl}/api/feedback/${feedbackId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +139,7 @@ const AdminDashboard = ({ user }: AdminDashboardProps) => {
     try {
       const token = localStorage.getItem('accessToken');
       const queryParams = new URLSearchParams(filters).toString();
-      const response = await fetch(`http://localhost:5000/api/feedback/admin/export?${queryParams}`, {
+      const response = await fetch(`${config.apiUrl}/api/feedback/admin/export?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

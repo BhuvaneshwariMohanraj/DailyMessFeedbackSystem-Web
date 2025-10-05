@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import config from '../config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -39,7 +40,7 @@ const MealMenu: React.FC = () => {
 
   const fetchTodayMeals = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/meals/today');
+      const response = await fetch(`${config.apiUrl}/api/meals/today`);
       const result = await response.json();
       
       if (result.success) {
@@ -55,7 +56,7 @@ const MealMenu: React.FC = () => {
 
   const fetchWeeklyMeals = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/meals/weekly');
+      const response = await fetch(`${config.apiUrl}/api/meals/weekly`);
       const result = await response.json();
       
       if (result.success) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User } from '../App';
 import FeedbackForm from './FeedbackForm';
 import MealMenu from './MealMenu';
+import config from '../config';
 
 interface UserDashboardProps {
   user: User;
@@ -33,7 +34,7 @@ const UserDashboard = ({ user }: UserDashboardProps) => {
   const fetchFeedbackHistory = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('http://localhost:5000/api/feedback/history', {
+      const response = await fetch(`${config.apiUrl}/api/feedback/history`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
