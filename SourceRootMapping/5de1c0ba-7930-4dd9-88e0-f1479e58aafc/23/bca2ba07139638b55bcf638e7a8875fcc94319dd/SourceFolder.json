@@ -1,0 +1,26 @@
+﻿{
+  "build_artifactstagingdirectory": "1\\a",
+  "agent_builddirectory": "1",
+  "collectionUrl": "https://dev.azure.com/220701046/",
+  "definitionName": "DailyMessFeedbackSystem",
+  "repositoryTrackingInfo": [
+    {
+      "identifier": "self",
+      "repositoryType": "Git",
+      "repositoryUrl": "https://220701046@dev.azure.com/220701046/DailyMessFeedbackSystem/_git/DailyMessFeedbackSystem",
+      "sourcesDirectory": "1\\s\\DailyMessFeedbackSystem"
+    }
+  ],
+  "fileFormatVersion": 3,
+  "lastRunOn": "10/05/2025 11:09:07 +05:30",
+  "repositoryType": "Git",
+  "lastMaintenanceAttemptedOn": "",
+  "lastMaintenanceCompletedOn": "",
+  "build_sourcesdirectory": "1\\s",
+  "common_testresultsdirectory": "1\\TestResults",
+  "collectionId": "5de1c0ba-7930-4dd9-88e0-f1479e58aafc",
+  "definitionId": "23",
+  "hashKey": "bca2ba07139638b55bcf638e7a8875fcc94319dd",
+  "repositoryUrl": "https://220701046@dev.azure.com/220701046/DailyMessFeedbackSystem/_git/DailyMessFeedbackSystem",
+  "system": "build"
+}
