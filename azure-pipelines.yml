@@ -30,8 +30,8 @@ stages:
 - stage: Build
   displayName: 'Build Stage'
   jobs:
-  - job: BuildBackend
-    displayName: 'Build Backend'
+  - job: BuildAll
+    displayName: 'Build Frontend and Backend'
     pool:
       vmImage: 'ubuntu-latest'
     
@@ -41,42 +41,25 @@ stages:
         versionSpec: '$(nodeVersion)'
       displayName: 'Install Node.js'
     
+    # Build Frontend First
     - script: |
-        cd backend
-        npm ci
-        npm run build
-      displayName: 'Install dependencies and build backend'
-    
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: 'backend'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/backend-$(Build.BuildId).zip'
-        replaceExistingArchive: true
-      displayName: 'Archive backend files'
-    
-    - publish: '$(Build.ArtifactStagingDirectory)/backend-$(Build.BuildId).zip'
-      artifact: backend
-      displayName: 'Publish backend artifact'
-
-  - job: BuildFrontend
-    displayName: 'Build Frontend'
-    pool:
-      vmImage: 'ubuntu-latest'
-    
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '$(nodeVersion)'
-      displayName: 'Install Node.js'
-    
-    - script: |
+        echo "Building Frontend..."
         cd frontend
         npm ci
         npm run build
-      displayName: 'Install dependencies and build frontend'
+        echo "Frontend build completed!"
+      displayName: 'Build Frontend'
     
+    # Build Backend Second
+    - script: |
+        echo "Building Backend..."
+        cd backend
+        npm ci
+        npm run build
+        echo "Backend build completed!"
+      displayName: 'Build Backend'
+    
+    # Archive Frontend
     - task: ArchiveFiles@2
       inputs:
         rootFolderOrFile: 'frontend/dist'
@@ -84,11 +67,27 @@ stages:
         archiveType: 'zip'
         archiveFile: '$(Build.ArtifactStagingDirectory)/frontend-$(Build.BuildId).zip'
         replaceExistingArchive: true
-      displayName: 'Archive frontend build files'
+      displayName: 'Archive Frontend Build'
     
+    # Archive Backend
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: 'backend'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/backend-$(Build.BuildId).zip'
+        replaceExistingArchive: true
+      displayName: 'Archive Backend Build'
+    
+    # Publish Frontend Artifact
     - publish: '$(Build.ArtifactStagingDirectory)/frontend-$(Build.BuildId).zip'
       artifact: frontend
-      displayName: 'Publish frontend artifact'
+      displayName: 'Publish Frontend Artifact'
+    
+    # Publish Backend Artifact
+    - publish: '$(Build.ArtifactStagingDirectory)/backend-$(Build.BuildId).zip'
+      artifact: backend
+      displayName: 'Publish Backend Artifact'
 
 - stage: Deploy
   displayName: 'Deploy Stage'
