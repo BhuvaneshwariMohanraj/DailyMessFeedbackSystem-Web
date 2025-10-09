@@ -114,7 +114,7 @@ app.use((err: any, req: any, res: any, next: any) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Daily Mess Feedback System Backend running on port ${PORT}`);
   console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
