@@ -1,8 +1,10 @@
 import * as sql from 'mssql';
-import * as dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables only in development
+if (process.env.NODE_ENV !== 'production') {
+  const dotenv = require('dotenv');
+  dotenv.config();
+}
 
 let pool: sql.ConnectionPool | null = null;
 
@@ -25,6 +27,11 @@ const config: sql.config = {
 
 export const connectDB = async (): Promise<void> => {
   try {
+    if (!config.user || !config.server || !config.database) {
+      console.error('❌ Database config missing! Check environment variables.');
+      return;
+    }
+
     console.log('Attempting to connect to database...');
     console.log(`Server: ${config.server}`);
     console.log(`Database: ${config.database}`);
