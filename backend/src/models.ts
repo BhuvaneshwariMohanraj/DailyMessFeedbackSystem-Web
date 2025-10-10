@@ -1,6 +1,59 @@
 import * as sql from 'mssql';
 const { pool } = require('./database');
 
+// Function to safely add AI columns to existing Feedback table
+const addAIColumnsIfNotExists = async () => {
+  try {
+    if (!pool) return;
+
+    // Check if AI columns already exist
+    const checkColumns = await pool.request().query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'Feedback' 
+      AND COLUMN_NAME LIKE 'ai_%'
+    `);
+
+    if (checkColumns.recordset.length > 0) {
+      console.log('✅ AI columns already exist in Feedback table');
+      return;
+    }
+
+    console.log('🔄 Adding AI columns to existing Feedback table...');
+
+    // Add AI columns one by one
+    const aiColumns = [
+      'ALTER TABLE Feedback ADD ai_priority_score INT DEFAULT NULL',
+      'ALTER TABLE Feedback ADD ai_priority_level NVARCHAR(10) DEFAULT NULL',
+      'ALTER TABLE Feedback ADD ai_sentiment NVARCHAR(10) DEFAULT NULL', 
+      'ALTER TABLE Feedback ADD ai_category NVARCHAR(50) DEFAULT NULL',
+      'ALTER TABLE Feedback ADD ai_keywords NVARCHAR(200) DEFAULT NULL',
+      'ALTER TABLE Feedback ADD ai_summary NVARCHAR(300) DEFAULT NULL',
+      'ALTER TABLE Feedback ADD ai_recommended_action NVARCHAR(200) DEFAULT NULL',
+      'ALTER TABLE Feedback ADD ai_escalation_needed BIT DEFAULT 0',
+      'ALTER TABLE Feedback ADD ai_health_safety_concern BIT DEFAULT 0',
+      'ALTER TABLE Feedback ADD ai_analyzed_at DATETIME DEFAULT NULL'
+    ];
+
+    for (const sql of aiColumns) {
+      try {
+        await pool.request().query(sql);
+        console.log(`✅ Added AI column: ${sql.split('ADD ')[1].split(' ')[0]}`);
+      } catch (error: any) {
+        if (error.message.includes('already exists')) {
+          console.log(`⚠️ AI column already exists: ${sql.split('ADD ')[1].split(' ')[0]}`);
+        } else {
+          console.error(`❌ Error adding AI column: ${error.message}`);
+        }
+      }
+    }
+
+    console.log('🎉 AI columns added successfully to Feedback table!');
+  } catch (error) {
+    console.error('❌ Error adding AI columns:', error);
+  }
+};
+
 export const createTables = async () => {
   try {
     if (pool) {
@@ -59,6 +112,17 @@ export const createTables = async () => {
           meal_type NVARCHAR(20), -- breakfast, lunch, dinner
           created_at DATETIME DEFAULT GETDATE(),
           updated_at DATETIME DEFAULT GETDATE(),
+          -- AI Analysis Fields
+          ai_priority_score INT DEFAULT NULL, -- 1-10 priority score
+          ai_priority_level NVARCHAR(10) DEFAULT NULL, -- LOW, MEDIUM, HIGH, URGENT
+          ai_sentiment NVARCHAR(10) DEFAULT NULL, -- positive, neutral, negative
+          ai_category NVARCHAR(50) DEFAULT NULL, -- Food Quality, Service, etc.
+          ai_keywords NVARCHAR(200) DEFAULT NULL, -- JSON array of keywords
+          ai_summary NVARCHAR(300) DEFAULT NULL, -- AI generated summary
+          ai_recommended_action NVARCHAR(200) DEFAULT NULL, -- Suggested action
+          ai_escalation_needed BIT DEFAULT 0, -- Whether escalation is needed
+          ai_health_safety_concern BIT DEFAULT 0, -- Health/safety flag
+          ai_analyzed_at DATETIME DEFAULT NULL, -- When AI analysis was done
           FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
         )
       `);
@@ -83,6 +147,19 @@ export const createTables = async () => {
         IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Feedback_rating')
         CREATE INDEX IX_Feedback_rating ON Feedback(rating);
       `);
+
+      await pool.request().query(`
+        IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Feedback_priority')
+        CREATE INDEX IX_Feedback_priority ON Feedback(ai_priority_score);
+      `);
+
+      await pool.request().query(`
+        IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Feedback_health_safety')
+        CREATE INDEX IX_Feedback_health_safety ON Feedback(ai_health_safety_concern);
+      `);
+
+      // Add AI columns to existing Feedback table if they don't exist
+      await addAIColumnsIfNotExists();
 
       console.log('Database tables created successfully!');
     } else {

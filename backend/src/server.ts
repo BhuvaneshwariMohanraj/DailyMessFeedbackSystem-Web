@@ -1,17 +1,38 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const http = require('http');
+const { Server } = require('socket.io');
 const { connectDB, getPool, isConnected } = require('./database');
 const { createTables, seedInitialData } = require('./models');
 const authRoutes = require('./routes/auth').default;
 const feedbackRoutes = require('./routes/feedback').default;
 const mealsRoutes = require('./routes/meals').default;
+const adminRoutes = require('./routes/admin').default;
+const alertService = require('./services/alertService').default;
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: [
+      'http://localhost:5173', 
+      'http://localhost:5174',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174',
+      'https://purple-pond-06f223000.2.azurestaticapps.net'
+    ],
+    methods: ['GET', 'POST']
+  }
+});
+
 const PORT = process.env.PORT || 5000;
+
+// Initialize alert service with Socket.IO
+alertService.setSocketIO(io);
 
 // Middleware
 app.use(express.json());
@@ -55,6 +76,7 @@ connectDB().then(async () => {
 app.use('/api/auth', authRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/meals', mealsRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Basic route
 app.get('/', (req: any, res: any) => {
@@ -64,7 +86,8 @@ app.get('/', (req: any, res: any) => {
     endpoints: {
       auth: '/api/auth',
       feedback: '/api/feedback',
-      meals: '/api/meals'
+      meals: '/api/meals',
+      admin: '/api/admin'
     }
   });
 });
@@ -113,11 +136,28 @@ app.use((err: any, req: any, res: any, next: any) => {
   });
 });
 
+// Socket.IO connection handling
+io.on('connection', (socket: any) => {
+  console.log('👤 Admin connected to real-time alerts:', socket.id);
+  
+  socket.on('disconnect', () => {
+    console.log('👤 Admin disconnected:', socket.id);
+  });
+  
+  // Join admin room for targeted alerts
+  socket.on('join-admin', () => {
+    socket.join('admin-room');
+    console.log('👨‍💼 Admin joined admin room:', socket.id);
+  });
+});
+
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Daily Mess Feedback System Backend running on port ${PORT}`);
   console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
+  console.log(`🔌 Socket.IO enabled for real-time alerts`);
+  console.log(`🤖 AI-powered feedback analysis with Gemini API`);
 });
 
 module.exports = app;
