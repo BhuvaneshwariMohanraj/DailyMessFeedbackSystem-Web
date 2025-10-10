@@ -3,7 +3,7 @@ import './App.css';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import UserDashboard from './components/UserDashboard';
-import AdminDashboard from './components/AdminDashboard';
+import EnhancedAdminDashboard from './components/EnhancedAdminDashboard';
 import config from './config';
 import Navbar from './components/Navbar';
 
@@ -116,7 +116,7 @@ function App() {
       <Navbar user={user} onLogout={handleLogout} />
       <div className="container mx-auto px-4 py-8">
         {user.role_id === 1 ? (
-          <AdminDashboard user={user} />
+          <EnhancedAdminDashboard user={user} />
         ) : (
           <UserDashboard user={user} />
         )}

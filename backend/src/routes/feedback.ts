@@ -1,6 +1,8 @@
 import * as express from 'express';
 import { AuthService } from '../auth';
 import { getPool } from '../database';
+import geminiService from '../services/geminiService';
+import alertService from '../services/alertService';
 
 const router = express.Router();
 
@@ -43,9 +45,70 @@ router.post('/submit', AuthService.authenticateToken, async (req: any, res: any)
         VALUES (@userId, @rating, @comment, @isAnonymous, 'pending', @mealDate, @mealType)
       `);
 
+    const feedbackRecord = result.recordset[0];
+
+    // Perform AI analysis if comment exists
+    if (comment && comment.trim()) {
+      try {
+        console.log(`🤖 Analyzing feedback ${feedbackRecord.id} with AI...`);
+        const analysis = await geminiService.analyzeFeedback(comment, rating, meal_type);
+        
+        // Update feedback with AI analysis
+        await dbPool.request()
+          .input('feedbackId', feedbackRecord.id)
+          .input('priorityScore', analysis.priority_score)
+          .input('priorityLevel', analysis.priority_level)
+          .input('sentiment', analysis.sentiment)
+          .input('category', analysis.category)
+          .input('keywords', JSON.stringify(analysis.keywords))
+          .input('summary', analysis.summary)
+          .input('recommendedAction', analysis.recommended_action)
+          .input('escalationNeeded', analysis.escalation_needed ? 1 : 0)
+          .input('healthSafetyConcern', analysis.health_safety_concern ? 1 : 0)
+          .input('analyzedAt', new Date())
+          .query(`
+            UPDATE Feedback SET
+              ai_priority_score = @priorityScore,
+              ai_priority_level = @priorityLevel,
+              ai_sentiment = @sentiment,
+              ai_category = @category,
+              ai_keywords = @keywords,
+              ai_summary = @summary,
+              ai_recommended_action = @recommendedAction,
+              ai_escalation_needed = @escalationNeeded,
+              ai_health_safety_concern = @healthSafetyConcern,
+              ai_analyzed_at = @analyzedAt
+            WHERE id = @feedbackId
+          `);
+
+        // Trigger alerts for high-priority feedback
+        if (analysis.priority_score >= 7) {
+          await alertService.triggerAlerts({
+            feedbackId: feedbackRecord.id,
+            priority_score: analysis.priority_score,
+            priority_level: analysis.priority_level,
+            category: analysis.category,
+            summary: analysis.summary,
+            meal_type: meal_type,
+            timestamp: new Date(),
+            health_safety_concern: analysis.health_safety_concern
+          });
+        }
+
+        console.log(`✅ AI analysis completed for feedback ${feedbackRecord.id} - Priority: ${analysis.priority_level}`);
+        
+        // Add AI analysis to response
+        feedbackRecord.ai_analysis = analysis;
+        
+      } catch (aiError) {
+        console.error('AI analysis failed:', aiError);
+        // Continue without AI analysis - don't fail the feedback submission
+      }
+    }
+
     res.status(201).json({
       message: 'Feedback submitted successfully',
-      feedback: result.recordset[0]
+      feedback: feedbackRecord
     });
   } catch (error: any) {
     console.error('Submit feedback error:', error);
