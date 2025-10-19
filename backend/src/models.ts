@@ -184,20 +184,16 @@ export const seedInitialData = async () => {
         INSERT INTO Roles (role_name, description) VALUES ('user', 'Regular User');
       `);
 
-      // Create default admin user (password: Admin123!)
+      // Create default admin user
       await pool.request().query(`
         IF NOT EXISTS (SELECT * FROM Users WHERE username = 'admin')
-        INSERT INTO Users (username, email, password_hash, role_id)
-        SELECT 'admin', 'admin@mess.com', '$2b$10$rEuVt2qKHfJ3cKgL5YQ6Le1gHJ8X8lQK3Y8K8nK9K5Q5K5K5K5K5K', role_id
-        FROM Roles WHERE role_name = 'admin';
+        INSERT INTO Users (username, email, password_hash, role_id) VALUES ('admin', 'admin@mess.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi', 1);
       `);
 
-      // Create sample users
+      // Create sample user1
       await pool.request().query(`
         IF NOT EXISTS (SELECT * FROM Users WHERE username = 'user1')
-        INSERT INTO Users (username, email, password_hash, role_id)
-        SELECT 'user1', 'user1@mess.com', '$2b$10$rEuVt2qKHfJ3cKgL5YQ6Le1gHJ8X8lQK3Y8K8nK9K5Q5K5K5K5K5K', role_id
-        FROM Roles WHERE role_name = 'user';
+        INSERT INTO Users (username, email, password_hash, role_id) VALUES ('user1', 'user1@mess.com', '$2b$10$3K9ZqYWxR8nYQ7c6K8nX8e1gHJ8X8lQK3Y8K8nK9K5Q5K5K5K5K5K', 2);
       `);
 
       // Seed menu data for the week
